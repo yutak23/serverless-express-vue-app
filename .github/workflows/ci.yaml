@@ -3,15 +3,25 @@ name: ci
 on:
   push:
     branches:
-      - main
-  pull_request:
-    branches:
       - '**'
+  # pull_request:
+  #   branches:
+  #     - '**'
   workflow_dispatch:
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    env:
+      NGINX_DIR: ./config/for_ci_nginx
+      CLIENT_ID: ${{ secrets.CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
+      REDIRECT_URI: ${{ secrets.REDIRECT_URI }}
+      COOKIE_SECRET: ${{ secrets.COOKIE_SECRET }}
+      GOOGLE_ACCOUNT_ID: ${{ secrets.GOOGLE_ACCOUNT_ID }}
+      GOOGLE_ACCOUNT_PASSWORD: ${{ secrets.GOOGLE_ACCOUNT_PASSWORD }}
+      IS_CI: true
+
     steps:
       - uses: actions/checkout@v3
 
@@ -27,7 +37,28 @@ jobs:
         run: yarn lint
 
       - name: build
-        run: yarn build
+        run: yarn build:dev
 
-      - name: test
-        run: yarn vitest:lib
+      - name: docker compose up
+        run: docker compose up -d
+
+      - name: docker logs express
+        run: docker logs express
+
+      - name: wait for nginx
+        run: curl --insecure --retry 10 --retry-connrefused --retry-delay 5 --retry-max-time 60 -v https://localhost
+
+      - name: docker logs express
+        run: docker logs express
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v5
+        # https://github.com/marketplace/actions/cypress-io#record-test-results-on-cypress-cloud
+        with:
+          browser: chrome
+          record: true
+          headed: true
+        env:
+          CYPRESS_RECORD_KEY: ${{ secrets.CYPRESS_RECORD_KEY }}
+          # https://docs.github.com/ja/actions/security-guides/automatic-token-authentication
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

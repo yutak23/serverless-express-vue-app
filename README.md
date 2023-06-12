@@ -63,6 +63,11 @@ Cypress での認証突破後に、自動テストの API テストを流す場�
 - `.env`の以下の値を以下のようにする
   - REDIRECT_URI=https://localhost/auth/callback
 
+### CI での自動テスト
+
+- docker compose でアプリ、その他（Nginx, MySQL, DynamoDB(Localstack)）を立ち上げ、docker のネットワークと疎通する事でテストを実行できるようにする
+  - 環境変数 NGINX_DIR を`./config/for_ci_nginx`に設定する
+
 ## 課題
 
 - redirect_uris に登録する uri が API Gateway を Deploy してからでないと判明しない

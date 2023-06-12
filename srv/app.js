@@ -19,6 +19,7 @@ import createRoutes from './routes/index.js';
 import initModels from './models/init-models.js';
 
 const nodeEnv = process.env.NODE_ENV;
+const isDocker = process.env.IS_DOCKER === 'true';
 if (nodeEnv === 'development') dotenv.config();
 
 const app = express();
@@ -48,7 +49,9 @@ app.use(
 		store: new DynamoDBStore({
 			client:
 				nodeEnv === 'development' || nodeEnv === 'localdev'
-					? new DynamoDBClient({ endpoint: 'http://localhost:4566' })
+					? new DynamoDBClient({
+							endpoint: `http://${isDocker ? 'localstack' : 'localhost'}:4566`
+					  })
 					: null, // https://github.com/ca98am79/connect-dynamodb/blob/master/lib/connect-dynamodb.js#LL64C53-L64C76
 			table: 'serverless-express-vue-app-sessions'
 		})
@@ -63,7 +66,11 @@ app.use((req, res, next) => {
 
 const sequelize = new Sequelize(
 	nodeEnv === 'development' || nodeEnv === 'localdev'
-		? { ...config.get('sequelize.base'), ...config.get('sequelize.local') }
+		? {
+				...config.get('sequelize.base'),
+				...config.get('sequelize.local'),
+				host: isDocker ? 'mysql' : 'localhost'
+		  }
 		: {
 				// FIXME AWS環境に合わせて修正
 				...config.get('sequelize.base'),
@@ -75,6 +82,7 @@ const sequelize = new Sequelize(
 const { locals } = app;
 locals.nodeEnv = nodeEnv;
 locals.errors = { HttpError: CustomHttpError };
+console.log('process.env.REDIRECT_URI', process.env.REDIRECT_URI);
 locals.authClient = await CustomOpenidClient.init({
 	...config.get('auth'),
 	client_id: process.env.CLIENT_ID,

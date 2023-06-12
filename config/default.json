@@ -24,8 +24,7 @@
 		},
 		"local": {
 			"username": "root",
-			"password": "",
-			"host": "localhost"
+			"password": ""
 		}
 	}
 }

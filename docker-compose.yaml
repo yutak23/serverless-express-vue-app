@@ -1,5 +1,28 @@
 version: '3.9'
 services:
+  app:
+    # dockerでNode.jsを実行するためのイメージ（nginx, localstack, mysqlと同一ネットワークに所属させるため）
+    image: node:16.20.0-alpine
+    container_name: express
+    command: sh -c "yarn install && node srv/app.local.js"
+    ports:
+      - 8080:8080
+    working_dir: /app
+    volumes:
+      - ./:/app
+    environment:
+      NODE_ENV: development
+      PORT: 8080
+      AWS_REGION: ap-northeast-1
+      AWS_ACCESS_KEY_ID: dummy
+      AWS_SECRET_ACCESS_KEY: dummy
+      IS_DOCKER: 'true'
+      CLIENT_ID: ${CLIENT_ID}
+      CLIENT_SECRET: ${CLIENT_SECRET}
+      REDIRECT_URI: ${REDIRECT_URI}
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      GOOGLE_ACCOUNT_ID: ${GOOGLE_ACCOUNT_ID}
+      GOOGLE_ACCOUNT_PASSWORD: ${GOOGLE_ACCOUNT_PASSWORD}
   nginx:
     image: nginx:latest
     container_name: nginx
@@ -8,7 +31,7 @@ services:
     environment:
       TZ: 'Asia/Tokyo'
     volumes:
-      - ./config/nginx:/etc/nginx/conf.d
+      - ${NGINX_DIR:-./config/for_ci_nginx}:/etc/nginx/conf.d
       - ./data/nginx:/var/log/nginx
   localstack:
     container_name: '${LOCALSTACK_DOCKER_NAME-localstack_main}'
